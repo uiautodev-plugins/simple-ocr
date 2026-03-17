@@ -1,0 +1,68 @@
+<html>
+
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <div id="app">
+    <button class="bg-blue-500 text-white px-4 py-2 rounded" @click="dump">Dump with OCR</button>
+    <div v-if="error" class="text-red-500 mt-2">{{ error }}</div>
+    <p>http://localhost:31513/api/vision/ocr</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+        error: ""
+      },
+      computed: {
+        deviceId() {
+          // Parse URL path to extract device ID
+          // URL query format: ?deviceId=a-08a3d291&id=1
+          const urlParams = new URLSearchParams(window.location.search);
+          return urlParams.get('deviceId') || "";
+        }
+      },
+      methods: {
+        async dump() {
+          if (!this.deviceId) {
+            this.error = "No device ID found in URL";
+            return;
+          }
+          const imgBase64 = await this.screenshot();
+          const response = await fetch('http://localhost:31515/ocr', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: imgBase64, image_format: "png" })
+          })
+          const data = await response.json();
+          console.log("OCR response data:", data);
+        },
+        async screenshot() {
+          const url = `/api/v1/devices/${this.deviceId}/screenshot`;
+          try {
+            const response = await fetch(url);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.code !== 0) {
+              throw new Error(`API error! code: ${data.code}, message: ${data.message}`);
+            }
+            console.log("Screenshot data:", data);
+            return data.data
+          } catch (err) {
+            this.error = `Failed to capture screenshot: ${err.message}`;
+          }
+        }
+      },
+      mounted() {
+        this.connectDevice();
+      }
+    })
+  </script>
+</body>
+
+</html>
