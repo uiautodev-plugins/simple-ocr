@@ -1,6 +1,6 @@
 {
   "name": "OCR",
-  "description": "generate text from image",
+  "description": "detect text from image",
   "version": "0.0.1",
   "main": "index.html",
   "height": 100
